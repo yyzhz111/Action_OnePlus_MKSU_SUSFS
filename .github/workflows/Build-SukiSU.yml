@@ -1,4 +1,4 @@
-name: Build OnePlus_Kernel
+name: 编译一加内核
 
 on:
   workflow_dispatch:
@@ -67,7 +67,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Maximize build space
+      - name: 最大化建筑空间
         uses: easimon/maximize-build-space@master
         with:
           root-reserve-mb: 8192
@@ -77,23 +77,23 @@ jobs:
           remove-haskell: 'true'
           remove-codeql: 'true'
 
-      - name: Configure Git
+      - name: 配置 Git
         run: |
           git config --global user.name "ychenxuan"
           git config --global user.email "3494167979@qq.com"
 
-      - name: Install dependencies
+      - name: 安装依赖项
         run: |
           sudo apt update && sudo apt upgrade -y
           sudo apt install -y python3 git curl
 
-      - name: Install repo tool
+      - name: 安装软件仓库工具
         run: |
           curl https://storage.googleapis.com/git-repo-downloads/repo > ~/repo
           chmod a+x ~/repo
           sudo mv ~/repo /usr/local/bin/repo
 
-      - name: Initialize repo and sync
+      - name: 初始化版本库并同步
         run: |
           mkdir kernel_workspace && cd kernel_workspace
           repo init -u https://github.com/OnePlusOSS/kernel_manifest.git -b refs/heads/oneplus/${{ inputs.CPU }} -m ${{ inputs.FEIL }}.xml --depth=1
@@ -103,7 +103,7 @@ jobs:
           sed -i 's/ -dirty//g' kernel_platform/common/scripts/setlocalversion
           sed -i 's/ -dirty//g' kernel_platform/msm-kernel/scripts/setlocalversion
       
-      - name: KernelSU & SukiSU version
+      - name: KernelSU 和 SukiSU 版本
         if: ${{ inputs.kernelsu_variant == 'SukiSU' }}
         run: |
           if [[ "${{ inputs.kernelsu_version }}" == "tag" ]]; then
@@ -112,7 +112,7 @@ jobs:
             echo "BRANCH=-s susfs-dev" >> $GITHUB_ENV
           fi
           
-      - name: Add KernelSU-SukiSU
+      - name: 添加 KernelSU-SukiSU
         if: ${{ inputs.kernelsu_variant == 'SukiSU' }}
         run: |
           cd kernel_workspace/kernel_platform
@@ -121,7 +121,7 @@ jobs:
           KSU_VERSION=$(expr $(/usr/bin/git rev-list --count HEAD) "+" 10506)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
           
-      - name: Apply SUSFS Patches SukiSU
+      - name: 应用 SUSFS 修补程序 SukiSU
         if: ${{ inputs.kernelsu_variant == 'SukiSU' && inputs.SUSFS_ENABLED == 'true' }}
         run: |
           cd kernel_workspace
@@ -138,32 +138,24 @@ jobs:
           patch -p1 < 50_add_susfs_in_gki-${{ inputs.ANDROID_VERSION }}-${{ inputs.KERNEL_VERSION }}.patch || true
           echo "完成"
           
-      - name: Apply Hide Stuff Patches
+      - name: 应用 Hide Stuff 修补程序
         if: ${{ inputs.SUSFS_ENABLED == 'true' }}
         run: |
           cd kernel_workspace/kernel_platform/common
-          cp ../../../SukiSU_patch/hooks/new_hooks.patch ./
-          echo "正在打vfs补丁"
-          patch -p1 -F 3 < new_hooks.patch || echo "补丁应用失败"
-          echo "完成"
-          else
-          echo "错误：补丁文件不存在"
-          ls ../../../SukiSU_patch/hooks/
-          exit 1
-          fi
+          cp ../../SukiSU_patch/69_hide_stuff.patch ./
           echo "正在打隐藏应用补丁"
           patch -p1 -F 3 < 69_hide_stuff.patch
          
-      - name: Apply New Hooks Patches
+      - name: 应用新的挂钩补丁
         if: ${{ inputs.VFS_patch_ENABLED == 'enable' }}
         run: |
           cd kernel_workspace/kernel_platform/common
-          cp ../../../SukiSU_patch/hooks/new_hooks.patch ./
+          cp ../../SukiSU_patch/hooks/new_hooks.patch ./
           echo "正在打vfs补丁"
           patch -p1 -F 3 < new_hooks.patch
           echo "完成"
 
-      - name: Add SUSFS Configuration Settings
+      - name: 添加 SUSFS 配置设置
         run: |
           cd kernel_workspace/kernel_platform
           echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -193,38 +185,38 @@ jobs:
 
           sed -i 's/check_defconfig//' ./common/build.config.gki
 
-      - name: Add make name
+      - name: 添加制作名称
         run: |
           cd kernel_workspace/kernel_platform
           sed -i '$s|echo "\$res"|echo "\${{ inputs.KERNEL_NAME }}"|' ./common/scripts/setlocalversion
           sed -i "/stable_scmversion_cmd/s/-maybe-dirty//g" ./build/kernel/kleaf/impl/stamp.bzl
   
-      - name: Build kernel
+      - name: 构建内核
         if: inputs.CPU == 'sm8650' 
         run: |
           cd kernel_workspace
           ./kernel_platform/build_with_bazel.py -t ${{ inputs.CPUD }} gki
           
-      - name: Fallback build kernel
+      - name: 后备构建内核
         if: inputs.CPU != 'sm8650' 
         run: |
           cd kernel_workspace
           LTO=thin ./kernel_platform/oplus/build/oplus_build_kernel.sh ${{ inputs.CPUD }} gki
          
-      - name: Make AnyKernel3
+      - name: 制作 AnyKernel3
         run: |
           git clone https://github.com/Kernel-SU/AnyKernel3 --depth=1
           rm -rf ./AnyKernel3/.git
           cp kernel_workspace/kernel_platform/out/msm-kernel-${{ inputs.CPUD }}-gki/dist/Image ./AnyKernel3/
           cp kernel_workspace/kernel_platform/out/msm-kernel-${{ inputs.CPUD }}-gki/dist/Image ./kernel_workspace/kernel
          
-      - name: Upload AnyKernel3
+      - name: 上传 AnyKernel3 文件
         uses: actions/upload-artifact@v4
         with:
           name: AnyKernel3_KernelSU_${{ env.KSUVER }}_${{ inputs.FEIL }}
           path: ./AnyKernel3/*
 
-      - name: Upload Image
+      - name: 上传 img 文件
         uses: actions/upload-artifact@v4
         with:
           name: Image_KernelSU_${{ env.KSUVER }}_${{ inputs.FEIL }}
@@ -239,12 +231,12 @@ jobs:
       contents: write  # 需要写入 Releases 的权限
     
     steps:
-      - name: Download artifacts
+      - name: 下载工件
         uses: actions/download-artifact@v4
         with:
           path: ./artifacts
 
-      - name: Create Release
+      - name: 创建发布
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
@@ -261,7 +253,7 @@ jobs:
             artifacts/AnyKernel3_KernelSU_*/Image
             artifacts/Image_KernelSU_*/Image
 
-      - name: Clean old releases
+      - name: 清理旧版本
         uses: dev-drprasad/delete-old-releases@v1
         with:
           keep_latest: ${{ env.RETENTION_COUNT }}
