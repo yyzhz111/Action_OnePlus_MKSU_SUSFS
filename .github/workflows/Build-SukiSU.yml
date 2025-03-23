@@ -142,7 +142,15 @@ jobs:
         if: ${{ inputs.SUSFS_ENABLED == 'true' }}
         run: |
           cd kernel_workspace/kernel_platform/common
-          cp ../../SukiSU_patch/69_hide_stuff.patch ./
+          cp ../../../SukiSU_patch/hooks/new_hooks.patch ./
+          echo "正在打vfs补丁"
+          patch -p1 -F 3 < new_hooks.patch || echo "补丁应用失败"
+          echo "完成"
+          else
+          echo "错误：补丁文件不存在"
+          ls ../../../SukiSU_patch/hooks/
+          exit 1
+          fi
           echo "正在打隐藏应用补丁"
           patch -p1 -F 3 < 69_hide_stuff.patch
          
@@ -150,7 +158,7 @@ jobs:
         if: ${{ inputs.VFS_patch_ENABLED == 'enable' }}
         run: |
           cd kernel_workspace/kernel_platform/common
-          cp ../../SukiSU_patch/hooks/new_hooks.patch ./
+          cp ../../../SukiSU_patch/hooks/new_hooks.patch ./
           echo "正在打vfs补丁"
           patch -p1 -F 3 < new_hooks.patch
           echo "完成"
