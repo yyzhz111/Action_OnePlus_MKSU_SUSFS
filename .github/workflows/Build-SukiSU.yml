@@ -209,7 +209,7 @@ jobs:
           git clone https://github.com/Kernel-SU/AnyKernel3 --depth=1
           rm -rf ./AnyKernel3/.git
           cp kernel_workspace/kernel_platform/out/msm-kernel-${{ github.event.inputs.CPUD }}-gki/dist/Image ./AnyKernel3/
-          cp kernel_workspace/kernel_platform/out/msm-kernel-${{ github.event.inputs.CPUD }}-gki/dist/Image ./kernel_workspace/kernel
+          cp kernel_workspace/kernel_platform/out/msm-kernel-${{ github.event.inputs.CPUD }}-gki/dist/Image ./kernel_workspace/init_boot.img
           
       - name: 打包 AnyKernel3 (ZIP)
         run: |
@@ -220,8 +220,8 @@ jobs:
       - name: 打包原始镜像 (ZIP)
         run: |
           # mkdir -p Image_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}
-          cp kernel_workspace/kernel ./Image_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}.img
-          zip -r Image_KernelSU_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}.zip Image_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}.img
+          # cp kernel_workspace/kernel ./init_boot.img
+          zip -r Image_KernelSU_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}.zip ./kernel_workspace/init_boot.img
 
       - name: 上传 ZIP 工件
         uses: actions/upload-artifact@v4
