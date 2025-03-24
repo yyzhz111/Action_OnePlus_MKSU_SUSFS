@@ -122,7 +122,11 @@ jobs:
           cd ./KernelSU
           KSU_VERSION=$(expr $(/usr/bin/git rev-list --count HEAD) "+" 10506)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
-          
+
+      - name: 输出KernelSU-SukiSU版本号
+        id: set_ksuver
+        run: echo "::set-output name=KSUVER::$KSU_VERSION"
+
       - name: 应用 SUSFS 修补程序 SukiSU
         if: ${{ github.event.inputs.kernelsu_variant == 'SukiSU' && github.event.inputs.SUSFS_ENABLED == 'true' }}
         run: |
@@ -238,13 +242,14 @@ jobs:
       contents: write
       packages: write
       actions: read
-    
+      
     steps:
       - name: 下载 ZIP 工件
         uses: actions/download-artifact@v4
         with:
           name: Kernel_ZIP_Artifacts
           path: ./release_zips
+        
 
       - name: 创建发布
         id: create_release
@@ -253,13 +258,12 @@ jobs:
           tag_name: "build-${{ github.run_id }}"
           name: "OnePlus_ACE5 Build ${{ github.run_number }}"
           body: |
-            每日自动编译一加系列 MKSU_SUSFS_VFS 内核
+            每日自动编译一加系列 SukiSU_MKSU_SUSFS_VFS 内核
             - 机型： 一加ACE5
+            - (修改Build-SukiSU.yml文件可更换机型)
             - 编译时间: ${{ github.event.repository.updated_at }}
-            - 哈希值: ${{ github.sha }}
-            - MKSU内核版本: ${{ env.KSUVER }}
+            - MKSU内核版本: ${{ needs.build.outputs.KSUVER }}
             - 如果构建的内核版本没变，不必更新！
-            
             - AnyKernel3文件使用 AnyKernel3/Recovery/TWRP 刷入
             - Image文件解压后使用 Fastboot 刷入
           draft: false
