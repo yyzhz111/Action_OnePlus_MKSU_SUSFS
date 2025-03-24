@@ -229,6 +229,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      packages: write
     
     steps:
       - name: 下载工件
@@ -254,9 +255,12 @@ jobs:
             artifacts/Image_KernelSU_*/Image
 
       - name: 清理旧版本
-        uses: dev-drprasad/delete-old-releases@v1
+        uses: dev-drprasad/delete-older-releases@master
+        continue-on-error: true
         with:
           keep_latest: ${{ env.RETENTION_COUNT }}
           delete_tags: true
+          retries: 3
+          retry-wait-time: 10
         env:
           GITHUB_TOKEN: ${{ github.token }}
