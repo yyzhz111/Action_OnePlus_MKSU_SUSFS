@@ -96,7 +96,7 @@ jobs:
       - name: 初始化版本库并同步
         run: |
           mkdir kernel_workspace && cd kernel_workspace
-          repo init -u https://github.com/OnePlusOSS/kernel_manifest.git -b refs/heads/oneplus/${{ github.event.inputs.CPU }} -m ${{ github.event.inputs.FEIL }}.xml --depth=1
+          repo init -u https://github.com/OnePlusOSS/kernel_manifest.git -b oneplus/${{ github.event.inputs.CPU }} -m ${{ github.event.inputs.FEIL }}.xml --depth=1
           repo sync
           rm kernel_platform/common/android/abi_gki_protected_exports_* || echo "No protected exports!"
           rm kernel_platform/msm-kernel/android/abi_gki_protected_exports_* || echo "No protected exports!"
@@ -104,7 +104,7 @@ jobs:
           sed -i 's/ -dirty//g' kernel_platform/msm-kernel/scripts/setlocalversion
       
       - name: KernelSU 和 SukiSU 版本
-        if: ${{ github.event.inputs.kernelsu_variant == 'Kernel' || github.event.inputs.kernelsu_variant == 'SukiSU' }}
+        if: ${{ github.event.inputs.kernelsu_variant == 'Official' || github.event.inputs.kernelsu_variant == 'SukiSU' }}
         run: |
           if [[ "${{ github.event.inputs.kernelsu_version }}" == "tag" ]]; then
             echo "BRANCH=-" >> $GITHUB_ENV
