@@ -255,7 +255,7 @@ jobs:
             artifacts/Image_KernelSU_*/Image
 
       - name: 清理旧版本
-        uses: dev-drprasad/delete-older-releases@master
+        uses: dev-drprasad/delete-older-releases@v0.3.4
         continue-on-error: true
         with:
           keep_latest: ${{ env.RETENTION_COUNT }}
