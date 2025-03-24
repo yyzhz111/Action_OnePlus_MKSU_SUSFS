@@ -262,5 +262,6 @@ jobs:
           delete_tags: true
           retries: 3
           retry-wait-time: 10
+          delete_tag_pattern: 'build-*'
         env:
           GITHUB_TOKEN: ${{ github.token }}
