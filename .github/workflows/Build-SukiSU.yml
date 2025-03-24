@@ -219,8 +219,8 @@ jobs:
 
       - name: 打包原始镜像 (ZIP)
         run: |
-          mkdir -p Image_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}
-          cp kernel_workspace/kernel/Image ./Image_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}.img
+          # mkdir -p Image_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}
+          cp kernel_workspace/kernel ./Image_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}.img
           zip -r Image_KernelSU_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}.zip Image_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}.img
 
       - name: 上传 ZIP 工件
