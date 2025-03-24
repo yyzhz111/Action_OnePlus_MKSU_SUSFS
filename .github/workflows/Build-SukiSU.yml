@@ -210,19 +210,27 @@ jobs:
           git clone https://github.com/Kernel-SU/AnyKernel3 --depth=1
           rm -rf ./AnyKernel3/.git
           cp kernel_workspace/kernel_platform/out/msm-kernel-${{ github.event.inputs.CPUD }}-gki/dist/Image ./AnyKernel3/
-          cp kernel_workspace/kernel_platform/out/msm-kernel-${{ github.event.inputs.CPUD }}-gki/dist/Image ./kernel_workspace/kernel
-         
-      - name: 上传 AnyKernel3 文件
-        uses: actions/upload-artifact@v4
-        with:
-          name: AnyKernel3_KernelSU_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}
-          path: ./AnyKernel3/*
+          cp kernel_workspace/kernel_platform/out/msm-kernel-${{ github.event.inputs.CPUD }}-gki/dist/Image ./kernel_workspace/kernel/
+          
+      - name: 打包 AnyKernel3 (ZIP)
+        run: |
+          cd AnyKernel3
+          zip -r ../AnyKernel3_KernelSU_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}.zip ./*
+          cd ..
 
-      - name: 上传 img 文件
+      - name: 打包原始镜像 (ZIP)
+        run: |
+          mkdir -p Image_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}
+          cp kernel_workspace/kernel/Image ./Image_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}.img
+          zip -r Image_KernelSU_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}.zip Image_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}.img
+
+      - name: 上传 ZIP 工件
         uses: actions/upload-artifact@v4
         with:
-          name: Image_KernelSU_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}
-          path: kernel_workspace/kernel
+          name: Kernel_ZIP_Artifacts
+          path: |
+            *.zip
+          retention-days: 1
 
   release:
     needs: build
@@ -230,12 +238,14 @@ jobs:
     permissions:
       contents: write
       packages: write
+      actions: read
     
     steps:
-      - name: 下载工件
+      - name: 下载 ZIP 工件
         uses: actions/download-artifact@v4
         with:
-          path: ./artifacts
+          name: Kernel_ZIP_Artifacts
+          path: ./release_zips
 
       - name: 创建发布
         id: create_release
@@ -244,24 +254,29 @@ jobs:
           tag_name: "build-${{ github.run_id }}"
           name: "Kernel Build ${{ github.run_number }}"
           body: |
-            Auto-generated build from GitHub Actions
-            - Date: ${{ github.event.repository.updated_at }}
-            - Commit: ${{ github.sha }}
-            - KSU Version: ${{ env.KSUVER }}
+            每日自动编译一加系列 MKSU_SUSFS_VFS 内核
+            - 机型： 一加ACE5
+            - 编译时间: ${{ github.event.repository.updated_at }}
+            - 哈希值: ${{ github.sha }}
+            - MKSU内核版本: ${{ env.KSUVER }}
+            - 如果构建的内核版本没变，不必更新！
+            
+            - AnyKernel3文件使用 AnyKernel3/Recovery/TWRP 刷入
+            - Image文件解压后使用 Fastboot 刷入
           draft: false
           prerelease: false
           files: |
-            artifacts/AnyKernel3_KernelSU_*/Image
-            artifacts/Image_KernelSU_*/Image
+            release_zips/AnyKernel3_KernelSU_*.zip
+            release_zips/Image_KernelSU_*.zip
 
       - name: 清理旧版本
         uses: dev-drprasad/delete-older-releases@v0.3.4
-        continue-on-error: true
+        continue-on-error: true  # 允许步骤失败
+        timeout-minutes: 5       # 防止卡死
         with:
           keep_latest: ${{ env.RETENTION_COUNT }}
           delete_tags: true
-          retries: 3
-          retry-wait-time: 10
           delete_tag_pattern: 'build-*'
         env:
           GITHUB_TOKEN: ${{ github.token }}
+
