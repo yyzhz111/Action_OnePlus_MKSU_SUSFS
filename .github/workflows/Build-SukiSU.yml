@@ -49,17 +49,17 @@ on:
         required: true
         type: choice
         options:
-          - enable
-          - disable
-        default: enable
+          - 启用
+          - 忽略
+        default: 启用
       VFS_patch_ENABLED:
         description: "添加vfs补丁（新钩子）？"
         required: true
         type: choice
         options:
-          - enable
-          - disable
-        default: enable
+          - 启用
+          - 忽略
+        default: 启用
   schedule:
     - cron: '0 23 * * *'  # UTC时间23点（北京时间次日7点）
 
@@ -138,11 +138,11 @@ jobs:
       - name: 应用 SUSFS 修补程序 SukiSU
         run: |
           KERNELSU_VARIANT="${{ github.event.inputs.kernelsu_variant || 'SukiSU' }}"
-          SUSFS_ENABLED="${{ github.event.inputs.SUSFS_ENABLED || 'enable' }}"
+          SUSFS_ENABLED="${{ github.event.inputs.SUSFS_ENABLED || '启用' }}"
           ANDROID_VERSION="${{ github.event.inputs.ANDROID_VERSION || 'android14' }}"
           KERNEL_VERSION="${{ github.event.inputs.KERNEL_VERSION || '6.1' }}"
           
-          if [[ "$KERNELSU_VARIANT" == "SukiSU" && "$SUSFS_ENABLED" == "enable" ]]; then
+          if [[ "$KERNELSU_VARIANT" == "SukiSU" && "$SUSFS_ENABLED" == "启用" ]]; then
             cd kernel_workspace
             git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-$ANDROID_VERSION-$KERNEL_VERSION
             git clone https://github.com/ShirkNeko/SukiSU_patch.git
@@ -160,9 +160,9 @@ jobs:
 
       - name: 应用 Hide Stuff 修补程序
         run: |
-          SUSFS_ENABLED="${{ github.event.inputs.SUSFS_ENABLED || 'enable' }}"
+          SUSFS_ENABLED="${{ github.event.inputs.SUSFS_ENABLED || '启用' }}"
           
-          if [[ "$SUSFS_ENABLED" == "enable" ]]; then
+          if [[ "$SUSFS_ENABLED" == "启用" ]]; then
             cd kernel_workspace/kernel_platform/common
             cp ../../SukiSU_patch/69_hide_stuff.patch ./
             echo "正在打隐藏应用补丁"
@@ -173,9 +173,9 @@ jobs:
          
       - name: 应用新的挂钩补丁
         run: |
-          VFS_PATCH_ENABLED="${{ github.event.inputs.VFS_patch_ENABLED || 'enable' }}"
+          VFS_PATCH_ENABLED="${{ github.event.inputs.VFS_patch_ENABLED || '启用' }}"
           
-          if [[ "$VFS_PATCH_ENABLED" == "enable" ]]; then
+          if [[ "$VFS_PATCH_ENABLED" == "启用" ]]; then
             cd kernel_workspace/kernel_platform/common
             cp ../../SukiSU_patch/hooks/new_hooks.patch ./
             echo "正在打vfs补丁"
@@ -189,9 +189,9 @@ jobs:
           cd kernel_workspace/kernel_platform
           echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
 
-          VFS_PATCH_ENABLED="${{ github.event.inputs.VFS_patch_ENABLED || 'enable' }}"
+          VFS_PATCH_ENABLED="${{ github.event.inputs.VFS_patch_ENABLED || '启用' }}"
           
-          if [[ "$VFS_PATCH_ENABLED" == 'enable' ]]; then
+          if [[ "$VFS_PATCH_ENABLED" == "启用" ]]; then
             echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
           else
