@@ -305,7 +305,7 @@ jobs:
             每日自动编译一加系列 SukiSU_MKSU_SUSFS_VFS 内核
             - 机型： 一加ACE5
             - (修改Build-SukiSU.yml文件可更换机型)
-            - 编译时间: ${{ format(date('Y年m月d日 H:i'), github.event.repository.updated_at) }}
+            - 编译时间: ${{ github.event.repository.updated_at }}
             - MKSU内核版本: ${{ needs.build.outputs.KSUVER || 'default_version' }}
             - 如果构建的内核版本没变，不必更新！
             - AnyKernel3文件使用 AnyKernel3/Recovery/TWRP 刷入
