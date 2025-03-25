@@ -133,6 +133,7 @@ jobs:
             cd ./KernelSU
             KSU_VERSION=$(expr $(/usr/bin/git rev-list --count HEAD) "+" 10506)
             echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+            echo "$KSU_VERSION" > ksu_version.txt
           fi
 
       - name: 应用 SUSFS 修补程序 SukiSU
@@ -289,7 +290,12 @@ jobs:
           name: Kernel_ZIP_Artifacts
           path: ./release_zips
         
-
+      - name: 设置 KSU 版本
+        id: set_ksu_version1
+        run: |
+          KSU_VERSION1=$(expr $(/usr/bin/git rev-list --count HEAD) "+" 10506)
+          echo "ksu_version1=$KSU_VERSION1" >> $GITHUB_OUTPUT
+          
       - name: 创建发布
         id: create_release
         uses: softprops/action-gh-release@v1
@@ -301,7 +307,7 @@ jobs:
             - 机型： 一加ACE5
             - (修改Build-SukiSU.yml文件可更换机型)
             - 编译时间: ${{ github.event.repository.updated_at }}
-            - MKSU内核版本: ${{ env.KSUVER }}
+            - MKSU内核版本: ${{ steps.set_ksu_version1.outputs.ksu_version1 }}
             - 如果构建的内核版本没变，不必更新！
             - AnyKernel3文件使用 AnyKernel3/Recovery/TWRP 刷入
             - Image文件解压后使用 Fastboot 刷入
