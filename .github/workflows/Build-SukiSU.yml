@@ -135,7 +135,7 @@ jobs:
 
       - name: 输出KernelSU-SukiSU版本号
         id: set_ksuver
-        run: echo "::set-output name=KSUVER::$KSU_VERSION"
+        run: echo "KSUVER=$KSU_VERSION" >> $GITHUB_OUTPUT
 
       - name: 应用 SUSFS 修补程序 SukiSU
         run: |
@@ -306,7 +306,7 @@ jobs:
             - 机型： 一加ACE5
             - (修改Build-SukiSU.yml文件可更换机型)
             - 编译时间: ${{ github.event.repository.updated_at }}
-            - MKSU内核版本: ${{ needs.build.outputs.KSUVER || 'default_version' }}
+            - MKSU内核版本: ${{ steps.set_ksuver.outputs.KSUVER || '未更新' }}
             - 如果构建的内核版本没变，不必更新！
             - AnyKernel3文件使用 AnyKernel3/Recovery/TWRP 刷入
             - Image文件解压后使用 Fastboot 刷入
