@@ -133,7 +133,6 @@ jobs:
             cd ./KernelSU
             KSU_VERSION=$(expr $(/usr/bin/git rev-list --count HEAD) "+" 12505)
             echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
-            echo "$KSU_VERSION" > ksu_version.txt
           fi
 
       - name: 应用 SUSFS 修补程序 SukiSU
