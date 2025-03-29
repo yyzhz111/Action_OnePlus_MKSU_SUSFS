@@ -148,7 +148,7 @@ jobs:
             git clone https://github.com/ShirkNeko/SukiSU_patch.git
             cd kernel_platform
 
-            # Copy SUSFS patches
+            # 复制SUSFS补丁
             cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-$ANDROID_VERSION-$KERNEL_VERSION.patch ./common/
             cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
             cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
