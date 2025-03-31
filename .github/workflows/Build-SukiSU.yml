@@ -119,7 +119,7 @@ jobs:
             if [[ "$KERNELSU_VERSION" == "tag" ]]; then
               echo "BRANCH=-" >> $GITHUB_ENV
             elif [[ "$KERNELSU_VERSION" == "main" ]]; then
-              echo "BRANCH=-s susfs-dev" >> $GITHUB_ENV
+              echo "BRANCH=-s susfs-stable" >> $GITHUB_ENV
             fi
           fi
 
