@@ -119,7 +119,7 @@ jobs:
             if [[ "$KERNELSU_VERSION" == "tag" ]]; then
               echo "BRANCH=-" >> $GITHUB_ENV
             elif [[ "$KERNELSU_VERSION" == "main" ]]; then
-              echo "BRANCH=-s susfs-stable" >> $GITHUB_ENV
+              echo "BRANCH=-s susfs-dev" >> $GITHUB_ENV
             fi
           fi
 
@@ -131,8 +131,10 @@ jobs:
             cd kernel_workspace/kernel_platform
             curl -LSs "https://raw.githubusercontent.com/ShirkNeko/KernelSU/main/kernel/setup.sh" | bash ${{ env.BRANCH }}
             cd ./KernelSU
-            KSU_VERSION=$(expr $(/usr/bin/git rev-list --count HEAD) "+" 12516)
+            KSU_VERSION=$(expr $(/usr/bin/git rev-list --count HEAD) "+" 10606)
             echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+            export KSU_VERSION=$KSU_VERSION
+            sed -i "s/DKSU_VERSION=12500/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
           fi
 
       - name: 应用 SUSFS 修补程序 SukiSU
@@ -182,13 +184,19 @@ jobs:
       - name: 应用新的挂钩补丁
         run: |
           VFS_PATCH_ENABLED="${{ github.event.inputs.VFS_patch_ENABLED || '启用' }}"
-          
+          KERNEL_VERSION="${{ github.event.inputs.KERNEL_VERSION || '6.1' }}"
           if [[ "$VFS_PATCH_ENABLED" == "启用" ]]; then
             cd kernel_workspace/kernel_platform/common
             cp ../../SukiSU_patch/hooks/new_hooks.patch ./
             echo "正在打vfs补丁"
             patch -p1 -F 3 < new_hooks.patch
             echo "完成"
+            
+            #if [ "$KERNEL_VERSION" != "5.10" ]; then
+            #  cp ../../SukiSU_patch/other/lz4k_patch/$KERNEL_VERSION/lz4kd.patch ./
+            #  patch -p1 -F 3 < lz4kd.patch || true
+            #fi
+            
           fi
 
 
@@ -196,7 +204,7 @@ jobs:
         run: |
           cd kernel_workspace/kernel_platform
           echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
-
+          echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
           VFS_PATCH_ENABLED="${{ github.event.inputs.VFS_patch_ENABLED || '启用' }}"
           
           if [[ "$VFS_PATCH_ENABLED" == "启用" ]]; then
@@ -223,11 +231,28 @@ jobs:
           echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
 
-          
-          #echo "CONFIG_CRYPTO_LZ4K=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_CRYPTO_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_CRYPTO_842=y" >> ./common/arch/arm64/configs/gki_defconfig
+          KERNEL_VERSION="${{ github.event.inputs.KERNEL_VERSION || '6.1' }}"
+          #if [ "$KERNEL_VERSION" != "6.6" ] && [ "$KERNEL_VERSION" != "5.10" ]; then
+          #  sed -i 's/CONFIG_ZRAM=m/CONFIG_ZRAM=y/g' ./common/arch/arm64/configs/gki_defconfig
+          #  sed -i 's/CONFIG_ZSMALLOC=m/CONFIG_ZSMALLOC=y/g' ./common/arch/arm64/configs/gki_defconfig
+          #  sed -i 's/CONFIG_MODULE_SIG=y/CONFIG_MODULE_SIG=n/g' ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_LZ4K=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_842=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #fi
+
+          #if [ "$KERNEL_VERSION" = "6.6" ]; then
+          #  echo "CONFIG_ZSMALLOC=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  sed -i 's/CONFIG_ZRAM=m/CONFIG_ZRAM=y/g' ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_LZ4K=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_842=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #fi
 
           # Remove check_defconfig
           sed -i 's/check_defconfig//' ./common/build.config.gki
@@ -235,31 +260,62 @@ jobs:
 
       - name: 添加制作名称
         run: |
-          cd kernel_workspace/kernel_platform
           KERNEL_NAME="${{ github.event.inputs.KERNEL_NAME || '-android14-11-o-g1132d864665d' }}"
-          sed -i '$s|echo "\$res"|echo "'"$KERNEL_NAME"'"|' ./common/scripts/setlocalversion
+          cd kernel_workspace/kernel_platform
           sed -i "/stable_scmversion_cmd/s/-maybe-dirty//g" ./build/kernel/kleaf/impl/stamp.bzl
-
-  
+          sed -i 's|echo "\$res"|echo "'"$(echo "$KERNEL_NAME" | sed 's/[\&/]/\\&/g')"'"|g' ./common/scripts/setlocalversion
+           
       - name: 构建内核
         run: |
           CPU="${{ github.event.inputs.CPU || 'sm8650' }}"
           CPUD="${{ github.event.inputs.CPUD || 'pineapple' }}"
+          cd kernel_workspace
           
-          if [[ "$CPU" == "sm8650" ]]; then
-            cd kernel_workspace
-            ./kernel_platform/build_with_bazel.py -t "$CPUD" gki
+          if [[ "$CPU" == "sm8650" || "$CPU" == "sm8750" ]]; then
+            ./kernel_platform/build_with_bazel.py -t $CPUD gki --action_env=KSU_VERSION
+          else
+            LTO=thin ./kernel_platform/oplus/build/oplus_build_kernel.sh $CPUD gki
           fi
 
-      - name: 后备构建内核
+      - name: 克隆 AnyKernel3 仓库
         run: |
-          CPU="${{ github.event.inputs.CPU || 'sm8650' }}"
           CPUD="${{ github.event.inputs.CPUD || 'pineapple' }}"
-          
-          if [[ "$CPU" != "sm8650" ]]; then
-            cd kernel_workspace
-            LTO=thin ./kernel_platform/oplus/build/oplus_build_kernel.sh "$CPUD" gki
+          # 克隆 AnyKernel3 仓库
+          git clone https://github.com/Kernel-SU/AnyKernel3 --depth=1
+          rm -rf ./AnyKernel3/.git
+
+          # 定义目录路径
+          dir1="./kernel_workspace/kernel_platform/out/msm-kernel-$CPUD-gki/dist/"
+          dir2="./kernel_workspace/kernel_platform/common/out/arch/arm64/boot/"
+          target1="./AnyKernel3/"
+          target2="./kernel_workspace/kernel"
+
+          # 在第一个目录中查找 Image 文件
+          if find "$dir1" -name "Image" | grep -q "Image"; then
+            echo "文件 Image 在dist目录中"
+            cp "$dir1"Image "$target1"
+            cp "$dir1"Image "$target2"
+          else
+            # 在第二个目录中查找 Image 文件
+            if find "$dir2" -name "Image" | grep -q "Image"; then
+              echo "文件 Image 在arch/arm64/boot目录中"
+              cp "$dir2"Image "$target1"
+              cp "$dir2"Image "$target2"
+            else
+              # 在 kernel_workspace/kernel_platform/common/out/ 的所有子目录中查找 Image 文件
+              echo "在 kernel_workspace/kernel_platform/common/out/ 的所有子目录中查找 Image 文件"
+              image_path=$(find "./kernel_workspace/kernel_platform/common/out/" -name "Image" | head -n 1)
+              
+              if [ -n "$image_path" ]; then
+                echo "找到 Image 文件: $image_path"
+                cp "$image_path" "$target1"
+                cp "$image_path" "$target2"
+              else
+                echo "在所有目录中未找到 Image 文件，构建可能失败"
+              fi
+            fi
           fi
+         
 
       - name: 制作 AnyKernel3
         run: |
