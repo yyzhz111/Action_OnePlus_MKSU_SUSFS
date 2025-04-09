@@ -272,9 +272,9 @@ jobs:
           cd kernel_workspace
           
           if [[ "$CPU" == "sm8650" || "$CPU" == "sm8750" ]]; then
-            ./kernel_platform/build_with_bazel.py -t "$CPUD" gki --action_env="${{ env.KSUVER }}"
+            ./kernel_platform/build_with_bazel.py -t $CPUD gki --action_env=${{ env.KSUVER }}
           else
-            LTO=thin ./kernel_platform/oplus/build/oplus_build_kernel.sh "$CPUD" gki
+            LTO=thin ./kernel_platform/oplus/build/oplus_build_kernel.sh $CPUD gki
           fi
 
       - name: 克隆 AnyKernel3 仓库
