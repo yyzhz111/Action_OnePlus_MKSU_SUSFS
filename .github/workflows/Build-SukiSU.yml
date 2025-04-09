@@ -133,8 +133,8 @@ jobs:
             cd ./KernelSU
             KSU_VERSION=$(expr $(/usr/bin/git rev-list --count HEAD) "+" 10606)
             echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
-            export KSU_VERSION=$KSU_VERSION
-            sed -i "s/DKSU_VERSION=12500/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
+            #export KSU_VERSION=$KSU_VERSION
+            sed -i "s/DKSU_VERSION=12500/DKSU_VERSION=$KSU_VERSION/" kernel/Makefile
           fi
 
       - name: 应用 SUSFS 修补程序 SukiSU
@@ -272,9 +272,9 @@ jobs:
           cd kernel_workspace
           
           if [[ "$CPU" == "sm8650" || "$CPU" == "sm8750" ]]; then
-            ./kernel_platform/build_with_bazel.py -t $CPUD gki --action_env=KSU_VERSION
+            ./kernel_platform/build_with_bazel.py -t "$CPUD" gki --action_env="${{ env.KSUVER }}"
           else
-            LTO=thin ./kernel_platform/oplus/build/oplus_build_kernel.sh $CPUD gki
+            LTO=thin ./kernel_platform/oplus/build/oplus_build_kernel.sh "$CPUD" gki
           fi
 
       - name: 克隆 AnyKernel3 仓库
@@ -359,10 +359,12 @@ jobs:
           tag_name: "build-${{ github.run_id }}"
           name: "OnePlus_ACE5 Build ${{ github.run_number }}"
           body: |
-            每日自动编译一加系列 SukiSU_MKSU_SUSFS_VFS 内核
+            每日自动编译一加系列 SukiSU 内核
             - 机型： 一加ACE5
             - (修改Build-SukiSU.yml文件可更换机型)
+            - 特性：MKSU+SUSFS+VFS+LZ4K
             - 编译时间: ${{ github.event.repository.updated_at }}
+            - 内核版本: ${{ env.KSUVER }}
             - 推荐管理器：[SukiSU-Ultra](https://github.com/ShirkNeko/SukiSU-Ultra/releases)
             - 如果构建的内核版本没变，不必更新！
             - AnyKernel3文件使用 AnyKernel3/Recovery/TWRP 刷入
