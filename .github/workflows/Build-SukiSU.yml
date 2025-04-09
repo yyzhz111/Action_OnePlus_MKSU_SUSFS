@@ -288,7 +288,7 @@ jobs:
           dir1="./kernel_workspace/kernel_platform/out/msm-kernel-$CPUD-gki/dist/"
           dir2="./kernel_workspace/kernel_platform/common/out/arch/arm64/boot/"
           target1="./AnyKernel3/"
-          target2="./kernel_workspace/kernel"
+          target2="./kernel_workspace/init_boot_Image.img"
 
           # 在第一个目录中查找 Image 文件
           if find "$dir1" -name "Image" | grep -q "Image"; then
@@ -315,16 +315,6 @@ jobs:
               fi
             fi
           fi
-         
-
-      - name: 制作 AnyKernel3
-        run: |
-          CPUD="${{ github.event.inputs.CPUD || 'pineapple' }}"
-          
-          git clone https://github.com/Kernel-SU/AnyKernel3 --depth=1
-          rm -rf ./AnyKernel3/.git
-          cp kernel_workspace/kernel_platform/out/msm-kernel-$CPUD-gki/dist/Image ./AnyKernel3/
-          cp kernel_workspace/kernel_platform/out/msm-kernel-$CPUD-gki/dist/Image ./kernel_workspace/init_boot.img
 
       - name: 打包 AnyKernel3 (ZIP)
         run: |
