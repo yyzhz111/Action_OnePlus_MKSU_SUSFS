@@ -137,6 +137,33 @@ jobs:
             sed -i "s/DKSU_VERSION=12500/DKSU_VERSION=$KSU_VERSION/" kernel/Makefile
           fi
 
+      - name: 设置 KernelSU 版本
+        run: |
+          cd kernel_workspace/kernel_platform
+          if [ -d "KernelSU" ]; then
+            cd KernelSU
+            KSU_GIT_VERSION=$(git rev-parse --short HEAD)
+            echo "KSU_GIT_VERSION=$KSU_GIT_VERSION" >> $GITHUB_ENV
+            echo "设置 drivers/kernelsu 版本"
+            sed -i "s/^KSU_GIT_VERSION := .*/KSU_GIT_VERSION := ${KSU_GIT_VERSION}/" drivers/kernelsu/Makefile || true
+          fi
+
+      - name: 准备签名工具
+        run: |
+          cd kernel_workspace/kernel_platform
+          mkdir -p common/scripts common/certs
+          # 仅当文件不存在时才生成
+          if [ ! -f "common/certs/signing_key.pem" ]; then
+            openssl req -new -nodes -x509 -newkey rsa:2048 \
+              -keyout common/certs/signing_key.pem \
+              -out common/certs/signing_key.pem \
+              -days 36500 -subj "/CN=Kernel/"
+          fi
+          if [ ! -f "common/scripts/sign-file" ]; then
+            curl -o common/scripts/sign-file https://raw.githubusercontent.com/torvalds/linux/master/scripts/sign-file
+            chmod +x common/scripts/sign-file
+          fi
+
       - name: 应用 SUSFS 修补程序 SukiSU
         run: |
           KERNELSU_VARIANT="${{ github.event.inputs.kernelsu_variant || 'SukiSU' }}"
@@ -273,9 +300,9 @@ jobs:
           git submodule update --init --recursive
           
           if [[ "$CPU" == "sm8650" || "$CPU" == "sm8750" ]]; then
-            ./kernel_platform/build_with_bazel.py -t "$CPUD" gki --action_env=KSU_VERSION
+            ./kernel_platform/build_with_bazel.py -t "$CPUD" gki --action_env=KSU_VERSION --verbose_failures
           else
-            LTO=thin ./kernel_platform/oplus/build/oplus_build_kernel.sh "$CPUD" gki
+            LTO=thin ./kernel_platform/oplus/build/oplus_build_kernel.sh "$CPUD" gki | tee build.log
           fi
 
       - name: 克隆 AnyKernel3 仓库
