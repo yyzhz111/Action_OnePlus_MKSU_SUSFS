@@ -239,7 +239,6 @@ jobs:
             - 机型： 一加ACE5
             - 特性：MKSU+SUSFS+VFS+LZ4K
             - 编译时间: ${{ github.event.repository.updated_at }}
-            # 内核版本获取为空值，是不是因为一个是release一个是build
             - 内核版本: ${{ needs.build.outputs.ksuver }}
             - 推荐管理器：[SukiSU-Ultra](https://github.com/ShirkNeko/SukiSU-Ultra/releases)
             - 如果构建的内核版本没变，不必更新！
