@@ -21,6 +21,8 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      ksuver: ${{ steps.set_ksuver.outputs.ksuver }}
     steps:
       - name: 最大化建筑空间
         uses: easimon/maximize-build-space@master
@@ -73,6 +75,7 @@ jobs:
           cd ./KernelSU
           KSU_VERSION=$(expr $(/usr/bin/git rev-list --count HEAD) "+" 12671)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+          echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
           export KSU_VERSION=$KSU_VERSION
           sed -i "s/DKSU_VERSION=12500/DKSU_VERSION=$KSU_VERSION/" kernel/Makefile
 
@@ -236,7 +239,8 @@ jobs:
             - 机型： 一加ACE5
             - 特性：MKSU+SUSFS+VFS+LZ4K
             - 编译时间: ${{ github.event.repository.updated_at }}
-            - 内核版本: ${{ env.KSUVER }}
+            # 内核版本获取为空值，是不是因为一个是release一个是build
+            - 内核版本: ${{ needs.build.outputs.ksuver }}
             - 推荐管理器：[SukiSU-Ultra](https://github.com/ShirkNeko/SukiSU-Ultra/releases)
             - 如果构建的内核版本没变，不必更新！
             - AnyKernel3文件使用 AnyKernel3/Recovery/TWRP 刷入
