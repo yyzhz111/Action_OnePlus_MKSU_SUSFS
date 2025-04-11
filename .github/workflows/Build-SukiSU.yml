@@ -22,7 +22,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      ksuver: ${{ steps.set_ksuver.outputs.ksuver }}
+      ksuver: ${{ steps.ksu_version.outputs.ksuver }}
     steps:
       - name: 最大化建筑空间
         uses: easimon/maximize-build-space@master
@@ -71,6 +71,7 @@ jobs:
           fi
 
       - name: 添加 KernelSU-SukiSU
+        id: ksu_version
         run: |
           cd kernel_workspace/kernel_platform
           curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/main/kernel/setup.sh" | bash ${{ env.BRANCH }}
