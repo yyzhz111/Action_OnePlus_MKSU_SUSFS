@@ -29,6 +29,7 @@ jobs:
         with:
           root-reserve-mb: 8192
           temp-reserve-mb: 2048
+          
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
@@ -59,6 +60,7 @@ jobs:
           rm kernel_platform/msm-kernel/android/abi_gki_protected_exports_* || echo "No protected exports!"
           sed -i 's/ -dirty//g' kernel_platform/common/scripts/setlocalversion
           sed -i 's/ -dirty//g' kernel_platform/msm-kernel/scripts/setlocalversion
+          sed -i 's/ -dirty//g' kernel_platform/external/dtc/scripts/setlocalversion
       
       - name: KernelSU 和 SukiSU 版本
         run: |
@@ -83,6 +85,11 @@ jobs:
         run: |
           cd kernel_workspace
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
+          if [[ "${{ github.event.inputs.KERNEL_VERSION }}" == "6.1" ]]; then
+            cd susfs4ksu
+            git reset --hard HEAD~1
+            cd ..
+          fi
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
           cd kernel_platform
 
@@ -90,12 +97,6 @@ jobs:
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
           cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
-
-          # zram lz4kd
-          #cp -r ../SukiSU_patch/other/lz4k/include/linux/* ./common/include/linux
-          #cp -r ../SukiSU_patch/other/lz4k/lib/* ./common/lib
-          #cp -r ../SukiSU_patch/other/lz4k/crypto/* ./common/crypto
-          
 
           cd ./common
           patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
@@ -178,25 +179,65 @@ jobs:
           if [[ "${{ env.CPU }}" == "sm8650" || "${{ env.CPU }}" == "sm8750" ]]; then
             ./kernel_platform/build_with_bazel.py -t ${{ env.CPUD }} gki --action_env=KSU_VERSION 
           else
-            LTO=thin ./kernel_platform/oplus/build/oplus_build_kernel.sh ${{ github.event.inputs.CPUD }} gki
+            LTO=thin ./kernel_platform/oplus/build/oplus_build_kernel.sh ${{ env.CPUD }} gki
           fi
-      - name: 克隆 AnyKernel3 仓库
+      - name: 准备AnyKernel3并处理内核映像
         run: |
+          # Clone AnyKernel3 and clean up
           git clone https://github.com/Kernel-SU/AnyKernel3 --depth=1
           rm -rf ./AnyKernel3/.git
 
-          image_path=$(find "./kernel_workspace/kernel_platform/" -name "Image" | head -n 1)
-          if [ -n "$image_path" ]; then
-            echo "找到 Image 文件: $image_path"
-            cp "$image_path" ./AnyKernel3/
-            cp "$image_path" ./kernel_workspace/init_boot_Image.img
-          else
-            echo "未找到 Image 文件，构建可能失败"
+          # Define possible image locations
+          declare -a img_dirs=(
+            "./kernel_workspace/kernel_platform/out/msm-kernel-${{ env.CPUD }}-gki/dist/"
+            "./kernel_workspace/kernel_platform/common/out/arch/arm64/boot/"
+            "./kernel_workspace/kernel_platform/out/msm-${{ github.event.inputs.CPUD }}-${{ env.CPUD }}-gki/dist/"
+          )
+
+          # Find the Image file
+          image_path=""
+          for dir in "${img_dirs[@]}"; do
+            if [[ -f "${dir}Image" ]]; then
+              image_path="${dir}Image"
+              break
+            fi
+          done
+
+          # Fallback search if not found in standard locations
+          if [[ -z "$image_path" ]]; then
+            image_path=$(find "./kernel_workspace/kernel_platform/common/out/" -name "Image" -print -quit)
+          fi
+
+          # Verify image exists
+          if [[ ! -f "$image_path" ]]; then
+            echo "::error::Image file not found, build may have failed"
             exit 1
           fi
 
+          # Ensure target directory exists
+          target_dir="./kernel_workspace/kernel_platform/out/msm-kernel-${{ env.CPUD }}-gki/dist/"
+          mkdir -p "$target_dir"
+
+          # Copy image if needed
+          if [[ "$(realpath "$image_path")" != "$(realpath "${target_dir}Image")" ]]; then
+            cp "$image_path" "${target_dir}Image"
+          fi
+
+          # Apply patch and prepare for AnyKernel3
+          cd "$target_dir"
+          curl -LO https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/0.11-beta/patch_linux
+          chmod +x patch_linux
+          ./patch_linux
+          rm -f Image
+          mv oImage Image
+
+          # Copy final image to destinations
+          cp Image "$GITHUB_WORKSPACE/AnyKernel3/"
+          cp Image "$GITHUB_WORKSPACE/kernel_workspace/init_boot_Image.img"
+
       - name: 打包 AnyKernel3 (ZIP)
         run: |
+          cd ..
           cd AnyKernel3
           zip -r ../AnyKernel3_KernelSU_${{ env.KSUVER }}_${{ env.FEIL }}.zip ./*
           cd ..
