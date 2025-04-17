@@ -12,8 +12,8 @@ env:
   CPUD: 'pineapple'
   ANDROID_VERSION: 'android14'
   KERNEL_VERSION: '6.1'
-  KERNEL_NAME: '-android14-11-o-g1132d864665d'
-  KERNELSU_VARIANT: 'SukiSU'
+  KERNEL_NAME: '-android14-11-o-g666666666666'
+  KERNELSU_VARIANT: 'SukiSU-Ultra'
   KERNELSU_VERSION: 'main'
   SUSFS_ENABLED: '启用'
   VFS_PATCH_ENABLED: '启用'
@@ -62,27 +62,27 @@ jobs:
           sed -i 's/ -dirty//g' kernel_platform/msm-kernel/scripts/setlocalversion
           sed -i 's/ -dirty//g' kernel_platform/external/dtc/scripts/setlocalversion
       
-      - name: KernelSU 和 SukiSU 版本
+      - name: KernelSU 和 SukiSU-Ultra 版本
         run: |
-          if [[ "${{ env.KERNELSU_VARIANT }}" == "SukiSU" ]]; then
+          if [[ "${{ env.KERNELSU_VARIANT }}" == "SukiSU-Ultra" ]]; then
             if [[ "${{ env.KERNELSU_VERSION }}" == "main" ]]; then
               echo "BRANCH=-s susfs-dev" >> $GITHUB_ENV
             fi
           fi
 
-      - name: 添加 KernelSU-SukiSU
+      - name: 添加 SukiSU-Ultra
         id: ksu_version
         run: |
           cd kernel_workspace/kernel_platform
-          curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/main/kernel/setup.sh" | bash ${{ env.BRANCH }}
+          curl -LSs "https://raw.bgithub.xyz/ShirkNeko/KernelSU/main/kernel/setup.sh" | bash ${{ env.BRANCH }}
           cd ./KernelSU
-          KSU_VERSION=$(expr $(/usr/bin/git rev-list --count HEAD) "+" 12671)
+          KSU_VERSION=$(expr $(/usr/bin/git rev-list --count HEAD) "+" 10606)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
           echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
           export KSU_VERSION=$KSU_VERSION
-          sed -i "s/DKSU_VERSION=12500/DKSU_VERSION=$KSU_VERSION/" kernel/Makefile
+          sed -i "s/DKSU_VERSION=12800/DKSU_VERSION=$KSU_VERSION/" kernel/Makefile
 
-      - name: 应用 SUSFS 修补程序 SukiSU
+      - name: 应用 SUSFS 修补程序 SukiSU-Ultra
         run: |
           cd kernel_workspace
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
@@ -266,7 +266,7 @@ jobs:
           tag_name: "build-${{ github.run_id }}"
           name: "OnePlus_ACE5 Build ${{ github.run_number }}"
           body: |
-            每日自动编译 SukiSU 内核
+            每日自动编译 SukiSU-Ultra 内核
             - 机型： 一加ACE5
             - 特性：MKSU+SUSFS+VFS+KPM
             - 编译时间: ${{ github.event.repository.updated_at }}
