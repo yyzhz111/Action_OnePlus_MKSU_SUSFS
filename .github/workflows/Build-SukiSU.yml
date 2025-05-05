@@ -382,10 +382,10 @@ jobs:
           zip -r ../AnyKernel3_KernelSU_${{ env.KSUVER }}_${{ env.FEIL }}.zip ./*
           cd ..
 
-      - name: 打包原始镜像 (ZIP)
-        run: |
-          cd $GITHUB_WORKSPACE/kernel_workspace
-          zip -r ../Image_KernelSU_${{ env.KSUVER }}_${{ env.FEIL }}.zip ./*
+     # - name: 打包原始镜像 (ZIP)
+       # run: |
+       #   cd $GITHUB_WORKSPACE/kernel_workspace
+      #    zip -r ../Image_KernelSU_${{ env.KSUVER }}_${{ env.FEIL }}.zip ./*
 
       - name: 上传 ZIP 工件
         uses: actions/upload-artifact@v4
@@ -419,13 +419,13 @@ jobs:
           body: |
             每日自动编译 SukiSU-Ultra 内核
             - 机型： 一加ACE5
-            - 特性：MKSU+SUSFS+VFS+KPM
+            - 特性：MKSU+SUSFS+VFS+KPM+LZ4K
             - 编译时间: ${{ github.event.repository.updated_at }}
             - 内核版本: ${{ needs.build.outputs.ksuver }}
             - 推荐管理器：[SukiSU-Ultra](https://github.com/ShirkNeko/SukiSU-Ultra/releases)
             - 如果构建的内核版本没变，不必更新！
-            - AnyKernel3文件使用 AnyKernel3/Recovery/TWRP 刷入
-            - Image文件解压后使用 Fastboot 刷入
+            - 使用 AnyKernel3/Recovery/TWRP 刷入
+            
           draft: false
           prerelease: false
           files: |
