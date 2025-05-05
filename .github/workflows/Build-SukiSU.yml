@@ -385,7 +385,7 @@ jobs:
       - name: 打包原始镜像 (ZIP)
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace
-          zip -r ../Image_KernelSU_${{ env.KSUVER }}_${{ env.FEIL }}.zip ./init_boot_Image.img
+          zip -r ../Image_KernelSU_${{ env.KSUVER }}_${{ env.FEIL }}.zip ./kernel_workspace/init_boot_Image.img
 
       - name: 上传 ZIP 工件
         uses: actions/upload-artifact@v4
