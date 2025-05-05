@@ -43,8 +43,22 @@ jobs:
 
       - name: 安装依赖项
         run: |
+
           sudo apt update && sudo apt upgrade -y
           sudo apt install -y python3 git curl
+
+      - name: 显示所选配置
+        run: |
+          echo "Selected CPU: ${{ env.CPU }}"
+          echo "Selected FEIL: ${{ env.FEIL }}"
+          echo "Selected CPUD: ${{ env.CPUD }}"
+          echo "Selected ANDROID_VERSION: ${{ env.ANDROID_VERSION }}"
+          echo "Selected KERNEL_VERSION: ${{ env.KERNEL_VERSION }}"
+          echo "Selected BUILD_METHOD: ${{ env.BUILD_METHOD }}"
+          echo "Selected SUSFS_CI: ${{ env.SUSFS_CI }}"
+          echo "Selected ZRAM: ${{ env.ZRAM }}"
+          echo "Selected VFS: ${{ env.VFS }}"
+          echo "Selected KPM: ${{ env.KPM }}"
 
       - name: 安装软件仓库工具
         run: |
