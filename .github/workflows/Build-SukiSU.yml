@@ -59,6 +59,7 @@ jobs:
           echo "Selected ZRAM: ${{ env.ZRAM }}"
           echo "Selected VFS: ${{ env.VFS }}"
           echo "Selected KPM: ${{ env.KPM }}"
+          echo "Selected KERNEL_NAME: ${{ env.KERNEL_NAME }}"
 
       - name: 安装软件仓库工具
         run: |
@@ -278,10 +279,10 @@ jobs:
           rm -rf ./AnyKernel3/.git
 
           dir1="/home/runner/work/Action_OnePlus_MKSU_SUSFS/Action_OnePlus_MKSU_SUSFS/kernel_workspace/kernel_platform/out/msm-kernel-${{ env.CPUD }}-${{ env.BUILD_METHOD }}/dist/"
-          dir2="/home/runner/work/Action_OnePlus_MKSU_SUSFS/Action_OnePlus_MKSU_SUSFS/kernel_workspace/kernel_platform/common/out/arch/arm64/boot/"
+          dir2="/home/runner/work/Action_OnePlus_MKSU_SUSFS/Action_OnePlus_MKSU_SUSFS/kernel_workspace/kernel_platform/out/msm-${{ env.CPUD }}-${{ env.CPUD }}-${{ env.BUILD_METHOD }}/gki_kernel/common/out/arch/arm64/boot/"
           dir3="/home/runner/work/Action_OnePlus_MKSU_SUSFS/Action_OnePlus_MKSU_SUSFS/kernel_workspace/kernel_platform/out/msm-${{ env.CPUD }}-${{ env.CPUD }}-${{ env.BUILD_METHOD }}/dist/"
           target1="./AnyKernel3/"
-          target2="./kernel_workspace/init_boot_Image.img"
+          target2="./kernel_workspace/kernel"
 
           # 查找 Image 文件
           if find "$dir1" -name "Image" | grep -q "Image"; then
