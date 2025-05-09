@@ -17,7 +17,7 @@ env:
   BUILD_METHOD: 'gki'
   SUSFS_CI: 'false'
   ZRAM: 'true'
-  KPM: 'true'
+  KPM: 'false'
 
 jobs:
   build:
