@@ -1,9 +1,9 @@
-name: 编译一加ACE5内核
+name: 编译一加ACE5内核-lz4k
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 23 * * *'  # UTC时间23点（北京时间次日7点）
+ # schedule:
+ #   - cron: '0 21 * * *'  # UTC时间23点（北京时间次日7点）
 
 env:
   RETENTION_COUNT: 7  # 保留的发布版本数量
@@ -12,12 +12,12 @@ env:
   CPUD: 'pineapple'
   ANDROID_VERSION: 'android14'
   KERNEL_VERSION: '6.1'
-  KERNEL_NAME: '-android14-11-o-chiyu'
+  KERNEL_NAME: '-android14-11-o-g666666666666'
   VFS: 'true' #启用 true  不启用 false
   BUILD_METHOD: 'gki'
-  SUSFS_CI: 'true'
+  SUSFS_CI: 'false'
   ZRAM: 'true'
-  KPM: 'true'
+  KPM: 'false'
 
 jobs:
   build:
@@ -118,12 +118,12 @@ jobs:
 
 
           if [ "${{ env.ZRAM }}" == "true" ]; then
-          echo "正在给内核打zram补丁"
-          cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./common/include/linux
-          cp -r ../SukiSU_patch/other/zram/lz4k/lib/* ./common/lib
-          cp -r ../SukiSU_patch/other/zram/lz4k/crypto/* ./common/crypto
-          cp -r ../SukiSU_patch/other/zram/zstdn ./common/lib/
-          cp -r ../SukiSU_patch/other/zram/lz4k_oplus ./common/lib/
+           echo "正在给内核打zram补丁"
+           cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./common/include/linux
+           cp -r ../SukiSU_patch/other/zram/lz4k/lib/* ./common/lib
+           cp -r ../SukiSU_patch/other/zram/lz4k/crypto/* ./common/crypto
+           cp -r ../SukiSU_patch/other/zram/zstdn ./common/lib/
+           cp -r ../SukiSU_patch/other/zram/lz4k_oplus ./common/lib/
           fi
 
 
@@ -141,10 +141,10 @@ jobs:
         run: |
           cd kernel_workspace/kernel_platform/common
           if [ "${{ env.VFS }}" = "true" ]; then
-          cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
-          echo "正在打vfs补丁"
-          patch -p1 -F 3 < syscall_hooks.patch
-          echo "vfs_patch完成"
+           cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
+           echo "正在打vfs补丁"
+           patch -p1 -F 3 < syscall_hooks.patch
+           echo "vfs_patch完成"
           fi
 
       - name: 应用 LZ4KD&ZSTDN 补丁
