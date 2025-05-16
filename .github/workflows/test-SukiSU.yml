@@ -254,6 +254,43 @@ jobs:
           sed -i "/stable_scmversion_cmd/s/-maybe-dirty//g" ./build/kernel/kleaf/impl/stamp.bzl
           sed -i 's|echo "\$res"|echo "'"$(echo "${{ env.KERNEL_NAME }}" | sed 's/[\&/]/\\&/g')"'"|g' ./common/scripts/setlocalversion
 
+      - name: 自动修复 BUILD.bazel module_outs
+        run: |
+          cd kernel_workspace/kernel_platform/common
+          # 递归查找所有已编译的 .ko 文件
+          find ../out -type f -name "*.ko" | sed 's|^../out/[^/]*/||' | sort -u > /tmp/all_ko.txt
+          # 提取 BUILD.bazel 现有的 ko 文件
+          grep -oE '"[^"]+\.ko"' BUILD.bazel | tr -d '"' | sort -u > /tmp/exist_ko.txt
+          # 找出未声明的 ko 文件
+          grep -vFxf /tmp/exist_ko.txt /tmp/all_ko.txt > /tmp/missing_ko.txt
+          # 自动补全 module_outs
+          if [ -s /tmp/missing_ko.txt ]; then
+            awk '/module_outs *= *\[/ {print NR; exit}' BUILD.bazel | while read -r lineno; do
+              # 反向写入，避免插入顺序错乱
+              tac /tmp/missing_ko.txt | while read -r ko; do
+                sed -i "$((lineno+1))i\    \"$ko\"," BUILD.bazel
+              done
+            done
+            echo "已自动补全以下缺失ko文件到module_outs："
+            cat /tmp/missing_ko.txt
+          else
+            echo "没有缺失的ko文件需要补全"
+          fi
+
+      - name: 自动补全 scripts/sign-file
+        run: |
+          cd kernel_workspace/kernel_platform/common
+          if [ ! -f scripts/sign-file ]; then
+            mkdir -p scripts
+            curl -LSso scripts/sign-file https://raw.githubusercontent.com/torvalds/linux/master/scripts/sign-file
+            chmod +x scripts/sign-file
+            echo "已自动下载scripts/sign-file"
+          fi
+
+      - name: 设置 OUT_DIR
+        run: |
+          echo "OUT_DIR=$PWD/kernel_workspace/kernel_platform/out" >> $GITHUB_ENV
+          
       - name: 构建内核
         run: |
           cd kernel_workspace
