@@ -2,7 +2,6 @@ name: 编译一加ACE5内核-LZ4K
 
 on:
   workflow_dispatch:
- 
 
 env:
   RETENTION_COUNT: 7  # 保留的发布版本数量
@@ -42,9 +41,15 @@ jobs:
 
       - name: 安装依赖项
         run: |
-
           sudo apt update && sudo apt upgrade -y
-          sudo apt install -y python3 git curl
+          sudo apt install -y python3 git curl openssl libssl-dev
+
+      - name: 安装软件仓库工具
+        run: |
+          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/repo
+          chmod a+x ~/repo
+          sudo mv ~/repo /usr/local/bin/repo
+          sudo ln -sf /usr/local/bin/repo /bin/repo
 
       - name: 显示所选配置
         run: |
@@ -59,12 +64,6 @@ jobs:
           echo "Selected VFS: ${{ env.VFS }}"
           echo "Selected KPM: ${{ env.KPM }}"
           echo "Selected KERNEL_NAME: ${{ env.KERNEL_NAME }}"
-
-      - name: 安装软件仓库工具
-        run: |
-          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/repo
-          chmod a+x ~/repo
-          sudo mv ~/repo /usr/local/bin/repo
 
       - name: 初始化版本库并同步
         run: |
@@ -114,8 +113,6 @@ jobs:
           cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
 
-
-
           if [ "${{ env.ZRAM }}" == "true" ]; then
           echo "正在给内核打zram补丁"
           cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./common/include/linux
@@ -123,8 +120,6 @@ jobs:
           cp -r ../SukiSU_patch/other/zram/lz4k/crypto/* ./common/crypto
           cp -r ../SukiSU_patch/other/zram/lz4k_oplus ./common/lib/
           fi
-
-
 
           cd ./common
           patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
@@ -160,7 +155,6 @@ jobs:
           cd kernel_workspace/kernel_platform
           CONFIG_FILE=./common/arch/arm64/configs/gki_defconfig
           KERNEL_VERSION="${{ env.KERNEL_VERSION }}"
-
           # SukiSU Ultra config
           echo "CONFIG_KSU=y" >> "$CONFIG_FILE"
           echo "CONFIG_KPM=y" >> "$CONFIG_FILE"
@@ -172,11 +166,9 @@ jobs:
             echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> "$CONFIG_FILE"
             echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$CONFIG_FILE"
           fi
-
           if [ "${{ env.VFS }}" = "false" ]; then
             echo "CONFIG_KSU_SUSFS_SUS_SU=y" >> "$CONFIG_FILE"
           fi
-
           # SUSFS config
           if [ "${{ env.VFS }}" = "true" ]; then
           echo "CONFIG_KSU_SUSFS=y" >> "$CONFIG_FILE"
@@ -195,14 +187,11 @@ jobs:
           echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> "$CONFIG_FILE"
           echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> "$CONFIG_FILE"
           fi
-
           # Remove check_defconfig
           sed -i 's/check_defconfig//' ./common/build.config.gki
-
           # LZ4KD配置
           if [ "${{ env.ZRAM }}" = "true" ]; then
           CONFIG_FILE=./common/arch/arm64/configs/gki_defconfig
-
             if [ "${{ env.KERNEL_VERSION }}" = "5.10" ]; then
               echo "CONFIG_ZSMALLOC=y" >> "$CONFIG_FILE"
               echo "CONFIG_ZRAM=y" >> "$CONFIG_FILE"
@@ -210,8 +199,6 @@ jobs:
               echo "CONFIG_CRYPTO_LZO=y" >> "$CONFIG_FILE"
               echo "CONFIG_ZRAM_DEF_COMP_LZ4KD=y" >> "$CONFIG_FILE"
             fi
-
-
             if [ "${{ env.KERNEL_VERSION }}" != "6.6" ] && [ "${{ env.KERNEL_VERSION }}" != "5.10" ]; then
               if [ "${{ env.KERNEL_VERSION }}" != "5.15" ]; then
                 sed -i 's/CONFIG_MODULE_SIG=y/CONFIG_MODULE_SIG=n/g' "$CONFIG_FILE"
@@ -223,12 +210,10 @@ jobs:
               fi
               sed -i 's/CONFIG_ZRAM=m/CONFIG_ZRAM=y/g' "$CONFIG_FILE"
             fi
-
             if [ "${{ env.KERNEL_VERSION }}" = "6.6" ]; then
               echo "CONFIG_ZSMALLOC=y" >> "$CONFIG_FILE"
               sed -i 's/CONFIG_ZRAM=m/CONFIG_ZRAM=y/g' "$CONFIG_FILE"
             fi
-
             if [ "${{env.ANDROID_VERSION }}" = "android14" ] || [ "${{ env.ANDROID_VERSION }}" = "android15" ]; then
               if [  -e ./common/modules.bzl ]; then
                 sed -i 's/"drivers\/block\/zram\/zram\.ko",//g; s/"mm\/zsmalloc\.ko",//g' "./common/modules.bzl"
@@ -238,14 +223,11 @@ jobs:
                 echo "CONFIG_ZSMALLOC=y" >> "msm-kernel/arch/arm64/configs/${{ env.CPUD }}-GKI.config"
                 echo "CONFIG_ZRAM=y" >> "msm-kernel/arch/arm64/configs/${{ env.CPUD }}-GKI.config"
               fi
-
-              
               echo "CONFIG_MODULE_SIG_FORCE=n" >> "$CONFIG_FILE"
             elif [ "${{ env.KERNEL_VERSION }}" = "5.10" ] || [ "${{ env.KERNEL_VERSION }}" = "5.15" ]; then
               rm "common/android/gki_aarch64_modules"
               touch "common/android/gki_aarch64_modules"
             fi
-
             if grep -q "CONFIG_ZSMALLOC=y" "$CONFIG_FILE" && grep -q "CONFIG_ZRAM=y" "$CONFIG_FILE"; then
               echo "CONFIG_CRYPTO_LZ4HC=y" >> "$CONFIG_FILE"
               echo "CONFIG_CRYPTO_LZ4K=y" >> "$CONFIG_FILE"
@@ -255,28 +237,38 @@ jobs:
             fi
           fi
 
-        
+      - name: 检查并生成签名密钥
+        run: |
+          KEY_PATH="kernel_workspace/kernel_platform/common/certs/signing_key.pem"
+          if [ ! -f "$KEY_PATH" ]; then
+            mkdir -p "$(dirname "$KEY_PATH")"
+            openssl req -new -nodes -utf8 -sha256 -days 36500 -batch -x509 \
+              -keyout "$KEY_PATH" \
+              -out "$KEY_PATH" \
+              -subj "/CN=Kernel Builder/"
+          fi
 
       - name: 添加制作名称
         run: |
           cd kernel_workspace/kernel_platform
           sed -i "/stable_scmversion_cmd/s/-maybe-dirty//g" ./build/kernel/kleaf/impl/stamp.bzl
           sed -i 's|echo "\$res"|echo "'"$(echo "${{ env.KERNEL_NAME }}" | sed 's/[\&/]/\\&/g')"'"|g' ./common/scripts/setlocalversion
-           
+
       - name: 构建内核
         run: |
           cd kernel_workspace
-
           if [[ "${{ env.CPU }}" == "sm8650" || "${{ env.CPU }}" == "sm8750" ]]; then
-            ./kernel_platform/build_with_bazel.py -t ${{ env.CPUD }} gki --action_env=KSU_VERSION 
+            ./kernel_platform/build_with_bazel.py -t ${{ env.CPUD }} gki --action_env=KSU_VERSION --verbose_failures
           else
             LTO=thin SYSTEM_DLKM_RE_SIGN=0 BUILD_SYSTEM_DLKM=0 KMI_SYMBOL_LIST_STRICT_MODE=0 ./kernel_platform/oplus/build/oplus_build_kernel.sh ${{ env.CPUD }} gki
           fi
+
+      # 后面的步骤全部保持你原来的内容，不用动！
+
       - name: 克隆 AnyKernel3
         run: |
           git clone https://github.com/Numbersf/AnyKernel3 --depth=1
           rm -rf ./AnyKernel3/.git
-
           dir1="kernel_workspace/kernel_platform/out/msm-kernel-${{ env.CPUD }}-${{ env.BUILD_METHOD }}/dist/"
           dir2="kernel_workspace/kernel_platform/bazel-out/k8-fastbuild/bin/msm-kernel/${{ env.CPUD }}_gki_kbuild_mixed_tree/"
           dir3="kernel_workspace/kernel_platform/out/msm-${{ env.CPUD }}-${{ env.CPUD }}-${{ env.BUILD_METHOD }}/dist/"
@@ -284,7 +276,6 @@ jobs:
           dir5="kernel_workspace/kernel_platform/out/msm-${{ env.CPUD }}-${{ env.CPUD }}-${{ env.BUILD_METHOD }}/gki_kernel/common/arch/arm64/boot/"
           target1="./AnyKernel3/"
           target2="./kernel_workspace/kernel"
-
           # 查找 Image 文件
           if find "$dir1" -name "Image" | grep -q "Image"; then
             image_path="$dir1"Image
@@ -299,7 +290,6 @@ jobs:
           else
             image_path=$(find "./kernel_workspace/kernel_platform/common/out/" -name "Image" | head -n 1)
           fi
-
           # 拷贝 Image
           if [ -n "$image_path" ] && [ -f "$image_path" ]; then
             mkdir -p "$dir1"
@@ -313,7 +303,6 @@ jobs:
             echo "未找到 Image 文件，构建可能失败"
             exit 1
           fi
-
           # 可选复制其它新文件（如果存在）
           if [ "${{ github.event.inputs.CPU }}" = "sm8750" ]; then
           for file in dtbo.img system_dlkm.erofs.img vendor_dlkm.img vendor_boot.img; do
@@ -329,7 +318,6 @@ jobs:
             fi
           done
           fi
-
 
       - name: 启用KPM
         run: |
@@ -349,18 +337,14 @@ jobs:
           LATEST_RUN_ID=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/sidex15/susfs4ksu-module/actions/runs?status=success" | \
             jq -r '.workflow_runs[] | select(.head_branch == "v1.5.2+") | .id' | head -n 1)
-
           if [ -z "$LATEST_RUN_ID" ]; then
             echo "No successful run found for branch v1.5.2+"
             exit 1
           fi
-
           ARTIFACT_URL=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/sidex15/susfs4ksu-module/actions/runs/$LATEST_RUN_ID/artifacts" | jq -r '.artifacts[0].archive_download_url')
-
           curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o ksu_module_susfs.zip "$ARTIFACT_URL"
           cp ksu_module_susfs.zip ./AnyKernel3/
-          
           fi
 
       - name: 下载 SUSFS 模块（Release）
@@ -369,6 +353,7 @@ jobs:
           wget https://github.com/sidex15/ksu_module_susfs/releases/latest/download/ksu_module_susfs_1.5.2+.zip
           cp ksu_module_susfs_1.5.2+.zip ./AnyKernel3/
           fi
+
       - name: 设置 suffix
         id: suffix
         run: |
@@ -387,11 +372,6 @@ jobs:
           cd $GITHUB_WORKSPACE/AnyKernel3
           zip -r ../AnyKernel3_KernelSU_${{ env.KSUVER }}_${{ env.FEIL }}.zip ./*
           cd ..
-
-     # - name: 打包原始镜像 (ZIP)
-       # run: |
-       #   cd $GITHUB_WORKSPACE/kernel_workspace
-      #    zip -r ../Image_KernelSU_${{ env.KSUVER }}_${{ env.FEIL }}.zip ./*
 
       - name: 上传 ZIP 工件
         uses: actions/upload-artifact@v4
