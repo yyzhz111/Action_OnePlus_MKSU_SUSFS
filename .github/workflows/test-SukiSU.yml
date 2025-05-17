@@ -1,8 +1,8 @@
-name: 编译一加ACE5内核-LZ4K
+name: 编译一加ACE5内核-lz4k
 
 on:
   workflow_dispatch:
- 
+
 
 env:
   RETENTION_COUNT: 7  # 保留的发布版本数量
@@ -14,7 +14,8 @@ env:
   KERNEL_NAME: '-android14-11-o-g666666666666'
   VFS: 'true' #启用 true  不启用 false
   BUILD_METHOD: 'gki'
-  SUSFS_CI: 'true'
+  SUSFS: 'false'
+  SUSFS_CI: 'false'
   ZRAM: 'true'
   KPM: 'false'
 
@@ -345,6 +346,8 @@ jobs:
 
       - name: 下载 SUSFS 模块（CI）
         run: |
+         
+         if [ "${{ env.SUSFS }}" = "true" ]; then
          if [ "${{ env.SUSFS_CI }}" = "true" ]; then
           LATEST_RUN_ID=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/sidex15/susfs4ksu-module/actions/runs?status=success" | \
@@ -362,12 +365,15 @@ jobs:
           cp ksu_module_susfs.zip ./AnyKernel3/
           
           fi
+          fi
 
       - name: 下载 SUSFS 模块（Release）
         run: |
+          if [ "${{ env.SUSFS }}" = "true" ]; then
           if [ "${{ env.SUSFS_CI }}" = "false" ]; then
           wget https://github.com/sidex15/ksu_module_susfs/releases/latest/download/ksu_module_susfs_1.5.2+.zip
           cp ksu_module_susfs_1.5.2+.zip ./AnyKernel3/
+          fi
           fi
       - name: 设置 suffix
         id: suffix
