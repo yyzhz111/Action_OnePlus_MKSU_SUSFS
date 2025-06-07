@@ -14,7 +14,7 @@ env:
   VFS: 'true' #启用 true  不启用 false
   BUILD_METHOD: 'gki'
   SUSFS_CI: 'true'
-  ZRAM: 'false'
+  ZRAM: 'true'
   KPM: 'true'
 
 jobs:
